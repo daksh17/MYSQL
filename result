@@ -1,0 +1,31 @@
+>ADD a primary key to the is fields in the pet and people table.
+
+
+mysql > alter table PET add  primary key  (ID) ;
+
+
+
+> ADD a foreign key to the owner_id field in the pets table  referencing the id
+  field in the people table
+
+
+
+mysql> ALTER TABLE PET ADD CONSTRAINT FK_OWNER_ID FOREIGN Key(OWNER_ID) references PEOPLE(ID);
+
+
+> Add a column named email to the people table.
+
+mysql> alter table PEOPLE add column email varchar(100);
+
+
+
+> Add a unique constraint to the email column in the people table
+
+mysql >ALTER TABLE PEOPLE  ADD CONSTRAINT uq_email unique (email);
+
+
+
+
+> Rename the name column in the pets table to the 'first_name'
+
+mysql>alter table PET change `NAME` `FIRST_NAME` varchar (20);
