@@ -62,7 +62,28 @@ mysql> SELECT m1.film_id, m2.title
 
 Empty set (0.00 sec)
 
--- aggregate function 
+-- aggregate function   
+
+-- 1) distinct function 
+-- The DISTINCT clause applies to the query output and removes rows that have identical values in the columns 
+-- selected for output in the query.
+
+mysql> SELECT DISTINCT first_name
+    -> FROM actor JOIN film_actor USING (actor_id);
+
+    -- return 128 rows 
+
+
+mysql> SELECT DISTINCT first_name, last_name
+    -> FROM actor JOIN film_actor USING (actor_id);
+
+-- return 199 rows 
+
+
+
+
+
+
 
 
 
