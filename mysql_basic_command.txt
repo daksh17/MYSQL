@@ -1,2 +1,67 @@
--- Column Aliases
+-- Column Aliases in order by clause to avoid long query 
+
+-- can be upto 256 char long 
+
+
+SELECT CONCAT(first_name, ' ', last_name, ' played in ', title) AS movie
+-> FROM actor JOIN film_actor USING (actor_id)
+-> JOIN film USING (film_id)
+-> ORDER BY movie LIMIT 20
+
+-- using entire concat function instead column alias 
+
+mysql> SELECT CONCAT(first_name, ' ', last_name, ' played in ', title) AS movie
+    -> FROM actor JOIN film_actor USING (actor_id)
+    -> JOIN film USING (film_id)
+    -> ORDER BY CONCAT(first_name, ' ', last_name, ' played in ', title)  LIMIT 20
+
+
+ -- can not use alias in where /on /using clause  but can be used in order By/having /group by clause 
+
+mysql> SELECT first_name AS name FROM actor WHERE name = 'ZERO CAGE';
+
+ERROR 1054 (42S22): Unknown column 'name' in 'where clause'
+
+
+
+Table Alias  
+
+-- can be upto 256 char long 
+
+-- can be used in where /on and using clause 
+
+--  if an alias has been used for a table, it’s impossible to refer to that table without using its new alias
+
+e.g. 
+
+mysql> SELECT ac.actor_id, ac.first_name, ac.last_name, fl.title FROM
+    -> actor AS ac INNER JOIN film_actor AS fla USING (actor_id)
+    -> INNER JOIN film AS fl USING (film_id)
+    -> WHERE film.title = 'AFFAIR PREJUDICE';
+
+ERROR 1054 (42S22): Unknown column 'film.title' in 'where clause'
+
+
+-- correct query 
+
+mysql> SELECT ac.actor_id, ac.first_name, ac.last_name, fl.title FROM
+    -> actor AS ac INNER JOIN film_actor AS fla USING (actor_id)
+    -> INNER JOIN film AS fl USING (film_id)
+    -> WHERE fl.title = 'AFFAIR PREJUDICE';  -- use alias 'fl' instead table Name 
+
+
+-- self join is possible using table alias 
+
+-- if we need to see the table have duplicate entry of movie then we need to match movie with the title and also should not have ID 
+-- since there is no duplicate movie detail in table so we wont see any result 
+
+mysql> SELECT m1.film_id, m2.title
+    -> FROM film AS m1, film AS m2
+    -> WHERE m1.title = m2.title
+    -> AND m1.film_id <> m2.film_id;
+
+Empty set (0.00 sec)
+
+
+
 
