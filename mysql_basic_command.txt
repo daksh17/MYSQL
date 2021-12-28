@@ -99,7 +99,146 @@ mysql> SELECT COUNT(email) FROM customer;
 
 
 
+-- having clause 
+
+mysql> SELECT first_name, last_name, COUNT(film_id)
+    -> FROM actor INNER JOIN film_actor USING (actor_id)
+    -> GROUP BY actor_id, first_name, last_name
+    -> ORDER BY COUNT(film_id) DESC;
+
+-- return 200  rows (unique values)
+
+mysql> SELECT first_name, last_name, COUNT(film_id)
+    -> FROM actor INNER JOIN film_actor USING (actor_id)
+    -> GROUP BY  first_name, last_name
+    -> ORDER BY COUNT(film_id) DESC;
+
+-- return 199 rows since 2 person have same first and last name 
 
 
+
+-- having clause with column  alias
+
+mysql> SELECT title, COUNT(rental_id) AS num_rented FROM
+    -> film INNER JOIN inventory USING (film_id)
+    -> INNER JOIN rental USING (inventory_id)
+    -> GROUP BY title
+    -> HAVING num_rented > 30
+    -> ORDER BY num_rented DESC LIMIT 5;
+
+-- bad use of having clause 
+
+
+
+
+
+
+
+-- union operator to find top 5 and least 5 selling movies 
+
+/*If you want to apply LIMIT or ORDER BY to an individual query that is part of a UNION statement,
+ enclose that query in parentheses
+*/
+
+(SELECT title, COUNT(rental_id) AS num_rented
+    -> FROM film JOIN inventory USING (film_id)
+    -> JOIN rental USING (inventory_id)
+    -> GROUP BY title ORDER BY num_rented DESC LIMIT 5)
+    -> UNION
+    -> (SELECT title, COUNT(rental_id) AS num_rented
+    -> FROM film JOIN inventory USING (film_id)
+    -> JOIN rental USING (inventory_id)
+    -> GROUP BY title ORDER BY num_rented ASC LIMIT 5);
+
+
+
+-- by default union  will provide the distinct result 
+
+mysql> SELECT first_name FROM actor WHERE actor_id = 88
+    -> UNION
+    -> SELECT first_name FROM actor WHERE actor_id = 169;
+
+-- by default union all will provide the all the result include duplicate rows  
+ 
+    mysql> SELECT first_name FROM actor WHERE actor_id = 88
+    -> UNION all
+    -> SELECT first_name FROM actor WHERE actor_id = 169;
+
+
+
+    -- order by with limit will sort the output in union but if just order by in union then 
+    --mysql does not perform the sorting 
+
+mysql> (SELECT title, rental_date, return_date
+    -> FROM film JOIN inventory USING (film_id)
+    -> JOIN rental USING (inventory_id)
+    -> WHERE film_id = 998
+    -> ORDER BY rental_date ASC)
+    -> UNION ALL
+    -> (SELECT title, rental_date, return_date
+    -> FROM film JOIN inventory USING (film_id)
+    -> JOIN rental USING (inventory_id)
+    -> WHERE film_id = 998
+    -> ORDER BY rental_date ASC LIMIT 5);
+
+
++--------------+---------------------+---------------------+
+| title        | rental_date         | return_date         |
++--------------+---------------------+---------------------+
+| ZHIVAGO CORE | 2005-06-17 03:19:20 | 2005-06-21 00:19:20 |
+| ZHIVAGO CORE | 2005-07-07 12:18:57 | 2005-07-12 09:47:57 |
+| ZHIVAGO CORE | 2005-07-27 14:53:55 | 2005-07-31 19:48:55 |
+| ZHIVAGO CORE | 2005-08-20 17:18:48 | 2005-08-26 15:31:48 |
+| ZHIVAGO CORE | 2005-05-30 05:15:20 | 2005-06-07 00:49:20 |
+| ZHIVAGO CORE | 2005-06-18 06:46:54 | 2005-06-26 09:48:54 |
+| ZHIVAGO CORE | 2005-07-12 05:24:02 | 2005-07-16 03:43:02 |
+| ZHIVAGO CORE | 2005-08-02 02:05:04 | 2005-08-10 21:58:04 |
+| ZHIVAGO CORE | 2006-02-14 15:16:03 | NULL                |
+
+-- the above output  from 1st subquery is not in correct order even we used order by clause 
+-- the below output  from 2nd subquery is in correct order since we used the limit operation  
+
+
+| ZHIVAGO CORE | 2005-05-30 05:15:20 | 2005-06-07 00:49:20 |
+| ZHIVAGO CORE | 2005-06-17 03:19:20 | 2005-06-21 00:19:20 |
+| ZHIVAGO CORE | 2005-06-18 06:46:54 | 2005-06-26 09:48:54 |
+| ZHIVAGO CORE | 2005-07-07 12:18:57 | 2005-07-12 09:47:57 |
+| ZHIVAGO CORE | 2005-07-12 05:24:02 | 2005-07-16 03:43:02 |
++--------------+---------------------+---------------------+
+
+
+
+
+-- alternate to union  with  putting  the limit on number of return result  
+
+mysql> (SELECT first_name, last_name FROM actor WHERE actor_id < 5)
+    -> UNION
+    -> (SELECT first_name, last_name FROM actor WHERE actor_id > 190)
+    -> ORDER BY first_name LIMIT 4;
+    
++------------+-----------+
+| first_name | last_name |
++------------+-----------+
+| BELA       | WALKEN    |
+| BURT       | TEMPLE    |
+| ED         | CHASE     |
+| GREGORY    | GOODING   |
++------------+-----------+
+4 rows in set (0.00 sec)
+
+-- same output can be achived using or condition 
+
+mysql> SELECT first_name, last_name FROM actor
+    -> WHERE actor_id < 5 OR actor_id > 190
+    -> ORDER BY first_name LIMIT 4;
++------------+-----------+
+| first_name | last_name |
++------------+-----------+
+| BELA       | WALKEN    |
+| BURT       | TEMPLE    |
+| ED         | CHASE     |
+| GREGORY    | GOODING   |
++------------+-----------+
+4 rows in set (0.00 sec)
 
 
