@@ -81,6 +81,21 @@ mysql> SELECT DISTINCT first_name, last_name
 
 
 
+-- count function 
+
+mysql> SELECT COUNT(*) FROM customer;
++----------+
+| count(*) |
++----------+
+|      599 |
++----------+
+
+mysql> SELECT COUNT(email) FROM customer;
++--------------+
+| count(email) |
++--------------+
+|          598 |
++--------------+
 
 
 
