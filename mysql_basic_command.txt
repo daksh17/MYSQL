@@ -276,6 +276,7 @@ total 31 records
 
 outer query =ANY(inner query)  == outer query IN(inner query)
 
+-- =ANY operator 
 
 mysql> SELECT emp_no, first_name, last_name
     -> FROM employees JOIN titles USING (emp_no)
@@ -284,6 +285,7 @@ mysql> SELECT emp_no, first_name, last_name
     -> JOIN titles USING (emp_no) WHERE
     -> title <> 'Manager');
 
+-- IN operator 
 
     mysql> SELECT emp_no, first_name, last_name
     -> FROM employees JOIN titles USING (emp_no)
@@ -291,6 +293,54 @@ mysql> SELECT emp_no, first_name, last_name
     -> AND emp_no IN(SELECT emp_no FROM employees
     -> JOIN titles USING (emp_no) WHERE
     -> title <> 'Manager');
+
+
+-- using join condition 
+
+mysql> SELECT DISTINCT emp_no, first_name, last_name
+    -> FROM employees JOIN titles mgr USING (emp_no)
+    -> JOIN titles nonmgr USING (emp_no)
+    -> WHERE mgr.title = 'Manager'
+    -> AND nonmgr.title <> 'Manager';
+
+
+  --  ANY keyword returns values that satisfy at least one condition (Boolean OR), the ALL keyword returns values only where all the conditions are satisfied (Boolean AND).
+  --We can use the alias NOT IN in place of <> ANY or != ANY.
+
+
+  --row subquery 
+
+
+mysql> SELECT mgr.emp_no, YEAR(mgr.from_date) AS fd
+    -> FROM titles AS mgr, titles AS other
+    -> WHERE mgr.emp_no = other.emp_no
+    -> AND mgr.title = 'Manager'
+    -> AND mgr.title <> other.title
+    -> AND YEAR(mgr.from_date) = YEAR(other.from_date);
++--------+------+
+| emp_no | fd   |
++--------+------+
+| 110765 | 1989 |
+| 111784 | 1988 |
++--------+------+
+2 rows in set (0.11 sec)
+
+
+-- using row subquery 
+
+
+mysql> SELECT emp_no, YEAR(from_date) AS fd
+    -> FROM titles WHERE title = 'Manager' AND
+    -> (emp_no, YEAR(from_date)) IN
+    -> (SELECT emp_no, YEAR(from_date)
+    -> FROM titles WHERE title <> 'Manager');
++--------+------+
+| emp_no | fd   |
++--------+------+
+| 110765 | 1989 |
+| 111784 | 1988 |
++--------+------+
+2 rows in set (0.12 sec)
 
 
 
