@@ -242,3 +242,40 @@ mysql> SELECT first_name, last_name FROM actor
 4 rows in set (0.00 sec)
 
 
+-- left join different output 
+
+
+mysql> SELECT email, name AS category_name, COUNT(rental_id) AS cnt
+    -> FROM category cat LEFT JOIN film_category USING (category_id)
+    -> LEFT JOIN inventory USING (film_id)
+    -> LEFT JOIN rental USING (inventory_id)
+    -> LEFT JOIN customer cs USING (customer_id)
+    -> WHERE cs.email = 'WESLEY.BULL@sakilacustomer.org'
+    -> GROUP BY email, category_name
+    -> ORDER BY cnt DESC;
+
+-- will provide correct 14 result where email is 'WESLEY.BULL@sakilacustomer.org'
+
+
+mysql> SELECT email, name AS category_name, COUNT(rental_id) AS cnt
+    -> FROM category cat LEFT JOIN film_category USING (category_id)
+    -> LEFT JOIN inventory USING (film_id)
+    -> LEFT JOIN rental USING (inventory_id)
+    -> LEFT JOIN customer cs ON rental.customer_id = cs.customer_id
+    -> AND cs.email = 'WESLEY.BULL@sakilacustomer.org'
+    -> GROUP BY email, category_name
+    -> ORDER BY cnt DESC;
+
+    
+-- will provide correct 14 result where email is 'WESLEY.BULL@sakilacustomer.org' and rest output with email as null so 
+total 31 records 
+
+
+
+-- nested query 
+
+
+
+
+
+
