@@ -274,6 +274,23 @@ total 31 records
 
 -- nested query 
 
+outer query =ANY(inner query)  == outer query IN(inner query)
+
+
+mysql> SELECT emp_no, first_name, last_name
+    -> FROM employees JOIN titles USING (emp_no)
+    -> WHERE title = 'Manager'
+    -> AND emp_no = ANY (SELECT emp_no FROM employees
+    -> JOIN titles USING (emp_no) WHERE
+    -> title <> 'Manager');
+
+
+    mysql> SELECT emp_no, first_name, last_name
+    -> FROM employees JOIN titles USING (emp_no)
+    -> WHERE title = 'Manager'
+    -> AND emp_no IN(SELECT emp_no FROM employees
+    -> JOIN titles USING (emp_no) WHERE
+    -> title <> 'Manager');
 
 
 
