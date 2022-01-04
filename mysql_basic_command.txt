@@ -342,6 +342,200 @@ mysql> SELECT emp_no, YEAR(from_date) AS fd
 +--------+------+
 2 rows in set (0.12 sec)
 
+/* The row subquery syntax allows you to compare multiple values per row. The expression (emp_no, YEAR(from_date)) means two values per row are compared to the output of the subquery. You can see following the IN keyword that the subquery returns two values, emp_no and YEAR(from_date). So, the fragment:
+(emp_no, YEAR(from_date)) IN (SELECT emp_no, YEAR(from_date)
+FROM titles WHERE title <> 'Manager')
+*/
+
+
+
+-- type os the subqueries 
+
+/* 
+
+1) column subqueries -- IN and ANY 
+
+ column subquery—that is, the results returned by the subquery are one or more values from a column,
+ instead of a single scalar value as in the previous section. With this, 
+you can now compare a column value from an outer query to a set of values returned from a subquery.
+
+mysql> SELECT emp_no, first_name, last_name
+    -> FROM employees JOIN titles USING (emp_no)
+    -> WHERE title = 'Manager'
+    -> AND emp_no = ANY (SELECT emp_no FROM employees
+    -> JOIN titles USING (emp_no) WHERE
+    -> title <> 'Manager');
+
+
+2) row subqueries 
+
+mysql> SELECT emp_no, YEAR(from_date) AS fd
+    -> FROM titles WHERE title = 'Manager' AND
+    -> (emp_no, YEAR(from_date)) IN
+    -> (SELECT emp_no, YEAR(from_date)
+    -> FROM titles WHERE title <> 'Manager');
+
+3) scaler subqueries -- return just values from subquery 
+
+
+
+
+4) co related subqueries  -- using exist and not exist 
+ where a table used in the outer query is referenced in the subquery
+
+Correlated subqueries are often used with the IN statement we’ve already discussed and almost 
+always used with the EXISTS and NOT EXISTS clauses that are the focus of this section.
+When the subquery is true, the outer query that uses the EXISTS clause returns a row. 
+The overall result is that all rows in the film table are counted because, 
+for each one, the subquery is true.
+It doesn’t actually matter what you select in an inner query when you’re using the EXISTS clause, 
+
+since it’s not used by the outer query anyway. You can select one column, everything,
+or even a constant (as in SELECT 'cat' from film), and it’ll have the same effect.
+*/
+
+-- using join 
+
+mysql> SELECT emp_no, first_name, last_name
+    -> FROM employees JOIN titles USING (emp_no)
+    -> WHERE title = 'Manager'
+    -> AND emp_no IN (SELECT emp_no FROM employees
+    -> JOIN titles USING (emp_no) WHERE
+    -> title <> 'Manager');y, though, you’ll see most SQL authors write SELECT * by convention.
+
+-- using exists operatoer 
+
+mysql> SELECT emp_no, first_name, last_name
+    -> FROM employees JOIN titles USING (emp_no)
+    -> WHERE title = 'Manager'
+    -> AND EXISTS (SELECT emp_no FROM titles
+    -> WHERE titles.emp_no = employees.emp_no
+    -> AND title <> 'Manager');
+
+------------------------------------------------
+
+-- Nested queries in the from clause 
+
+
+mysql> SELECT emp_no, monthly_salary FROM
+    -> (SELECT emp_no, salary/12 AS monthly_salary FROM salaries) AS ms
+    -> LIMIT 5;
+
+
+-- if the alias is not define then we will get the error as mention 
+
+mysql> SELECT emp_no, monthly_salary FROM
+    -> (SELECT emp_no, salary/12 AS monthly_salary FROM salaries)
+    -> LIMIT 5;
+
+ERROR 1248 (42000): Every derived table must have its own alias
+
+mysql> SELECT AVG(gross) FROM
+    -> (SELECT SUM(amount) AS gross
+    -> FROM payment JOIN rental USING (rental_id)
+    -> JOIN inventory USING (inventory_id)
+    -> JOIN film USING (film_id)
+    -> GROUP BY film_id) AS gross_amount;
++------------+
+| AVG(gross) |
++------------+
+|  70.361754 |
++------------+
+1 row in set (0.05 sec)
+You can see that the inner query joins together payment, rental, inventory, and film, and groups the sales together by film so you can get a sum for each film. If you run it in isolation, here’s what happens:
+mysql> SELECT SUM(amount) AS gross
+    -> FROM payment JOIN rental USING (rental_id)
+    -> JOIN inventory USING (inventory_id)
+    -> JOIN film USING (film_id)
+    -> GROUP BY film_id;
++--------+
+| gross  |
++--------+
+|  36.77 |
+|  52.93 |
+|  37.88 |
+|    ... |
+|  14.91 |
+|  73.83 |
+| 214.69 |
++--------+
+958 rows in set (0.08 sec)
+Now, the outer query takes these sums—which are aliased as gross--and averages them to give the final result. This query is the typical way that you apply two aggregate functions to one set of data. You can’t apply aggregate functions in a cascade, as in AVG(SUM(amount)):
+
+mysql> SELECT AVG(SUM(amount)) AS avg_gross
+    -> FROM payment JOIN rental USING (rental_id)
+    -> JOIN inventory USING (inventory_id)
+    -> JOIN film USING (film_id) GROUP BY film_id;
+ERROR 1111 (HY000): Invalid use of group function
+
+With subqueries in FROM clauses, you can return a scalar value, a set of column values, more than one row, 
+or even a whole table. However, you can’t use correlated subqueries, meaning that you can’t reference tables or
+ columns from tables that aren’t explicitly listed in the subquery. 
+Note also that you must alias the whole subquery using the AS keyword and
+ give it a name, even if you don’t use that name anywhere in the query.
+
+
+
+
+--- Nested queries in joins 
+
+
+mysql> SELECT cat.name AS category_name, COUNT(cat.category_id) AS cnt
+    -> FROM category AS cat LEFT JOIN film_category USING (category_id)
+    -> LEFT JOIN inventory USING (film_id)
+    -> LEFT JOIN rental USING (inventory_id)
+    -> JOIN customer AS cs ON rental.customer_id = cs.customer_id
+    -> WHERE cs.email = 'WESLEY.BULL@sakilacustomer.org'
+    -> GROUP BY category_name ORDER BY cnt DESC;
++-------------+-----+
+| name        | cnt |
++-------------+-----+
+| Games       |   9 |
+| Foreign     |   6 |
+| ...               |
+| ...               |
+| Comedy      |   1 |
+| Sports      |   1 |
++-------------+-----+
+14 rows in set (0.00 sec)
+Now that we know about subqueries and joins and that subqueries can be used in joins, we can easily finish the task. This is our new query:
+mysql> SELECT cat.name AS category_name, cnt
+    -> FROM category AS cat
+    -> LEFT JOIN (SELECT cat.name, COUNT(cat.category_id) AS cnt
+    ->    FROM category AS cat
+    ->    LEFT JOIN film_category USING (category_id)
+    ->    LEFT JOIN inventory USING (film_id)
+    ->    LEFT JOIN rental USING (inventory_id)
+    ->    JOIN customer cs ON rental.customer_id = cs.customer_id
+    ->    WHERE cs.email = 'WESLEY.BULL@sakilacustomer.org'
+    ->    GROUP BY cat.name) customer_cat USING (name)
+    -> ORDER BY cnt DESC;
++-------------+------+
+| name        | cnt  |
++-------------+------+
+| Games       |    9 |
+| Foreign     |    6 |
+| ...                |
+| Children    |    1 |
+| Sports      |    1 |
+| Sci-Fi      | NULL |
+| Action      | NULL |
+| Thriller    | NULL |
++-------------+------+
+17 rows in set (0.01 sec)
+Finally, we get all the categories displayed, and we get NULL values for those where no rentals were made. Let’s review what’s going on in our new query. The subquery, which we aliased as customer_cat, is our previous query without the ORDER BY clause. Thus, we know what it will return: 14 rows for categories in which Wesley rented something, and the number of rentals in each. Next, use LEFT JOIN to concatenate that information to the full list of categories from the category table. The category table is driving the join, so it’ll have every row selected. We join the subquery using the name column that matches between the subquery’s output and the category table’s column.
+The technique we showed here is a very powerful one; however, as always with subqueries, it comes at a cost. MySQL cannot optimize the whole query as efficiently when a subquery is present in the join clause.
+
+
+
+
+
+
+
+
+
+
+
 
 
 
